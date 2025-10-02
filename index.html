@@ -1,270 +1,134 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f1115">
-<title>Impostor — Swipe Down</title>
-<style>
-/* === Design tokens (2025 polish) === */
-:root{
-  /* Brand / ambiance */
-  --bg:#0f1115;                 /* deep canvas */
-  --bg-grad1:#171a21;           /* subtle gradient stop */
-  --bg-grad2:#0f1115;
-  --glow1:#ff7a43;              /* warm accent A */
-  --glow2:#ff4e95;              /* warm accent B */
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Impostor — Swipe Down (2025)</title>
+  <style>
+    :root{
+      /* Brand */
+      --bg1:#0f1014;          /* deep space */
+      --bg2:#161921;          /* night indigo */
+      --accent:#ff6b4a;       /* coral highlight */
+      --accent-2:#ffd06b;     /* warm light */
+      --panel:#0c0d10;        /* role panel */
+      --cardTop:#ffb869;      /* legacy warm gradient light */
+      --cardBot:#ff7a43;      /* legacy warm gradient dark */
+      --white:#fff;
+      --muted: rgba(255,255,255,.85);
 
-  /* Surfaces */
-  --panel: rgba(20,22,28,0.68);  /* glass panel */
-  --panel-bd: rgba(255,255,255,0.12);
-  --panel-bd-2: rgba(255,255,255,0.06);
+      --radius: 28px;
+      --cardRadius: 28px;
+      --shadow-lg: 0 24px 80px rgba(0,0,0,.45);
+      --shadow-md: 0 16px 48px rgba(0,0,0,.36);
+      --safe-bottom: env(safe-area-inset-bottom);
+      --safe-top: env(safe-area-inset-top);
+      --panelHeight: min(32vh, 260px); /* Taller role field (no rounded bottom) */
+      --dragGap: 16px; /* gap between panel and card at max drag */
+    }
 
-  /* Card */
-  --cardGrad1:#ffb869;
-  --cardGrad2:#ff7a43;
-  --cardSpecular: rgba(255,255,255,0.28);
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: 100%;
+      color: var(--white);
+      background: linear-gradient(160deg,var(--bg1),var(--bg2));
+      overflow: hidden;
+    }
 
-  /* Text */
-  --white:#ffffff;
-  --muted: rgba(255,255,255,0.82);
+    /* Animated grain / stars */
+    .noise{position:fixed;inset:-50%;pointer-events:none;opacity:.08;mix-blend-mode:overlay;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');animation:grain 1.8s steps(4) infinite}
+    @keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}50%{transform:translate(4%,-3%)}75%{transform:translate(-2%,-1%)}100%{transform:translate(0,0)}}
 
-  /* Radii & shadows */
-  --radius: 24px;
-  --cardRadius: 26px;
-  --shadow-ambient: 0 30px 80px rgba(0,0,0,0.55);
-  --shadow-strong: 0 22px 60px rgba(0,0,0,0.40);
+    /* Subtle grid */
+    .grid{position:fixed;inset:0;pointer-events:none;opacity:.06;background-image:radial-gradient(circle at 50% 50%, rgba(255,255,255,.35) 0 1px, transparent 2px), linear-gradient(transparent 31px, rgba(255,255,255,.09) 32px), linear-gradient(90deg, transparent 31px, rgba(255,255,255,.09) 32px); background-size:32px 32px, 32px 32px, 32px 32px;}
 
-  /* Layout */
-  --safe-bottom: env(safe-area-inset-bottom);
-  --end-gap: 14px;
-}
+    /* App layout */
+    .container{ max-width:640px; margin:0 auto; height:100%; display:grid; grid-template-rows:auto 1fr auto; padding:calc(8px + var(--safe-top)) 16px calc(28px + var(--safe-bottom)); gap:10px; }
 
-*{box-sizing:border-box}
-html,body{height:100%;margin:0}
-body{
-  font-family: -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  -webkit-font-smoothing:antialiased;
-  -webkit-text-size-adjust:100%;
-  color:var(--white);
-  background: radial-gradient(1200px 80% at 10% 0%, rgba(255,122,67,0.18) 0%, transparent 55%),
-              radial-gradient(1200px 90% at 100% 90%, rgba(255,78,149,0.16) 0%, transparent 60%),
-              linear-gradient(180deg,var(--bg-grad1),var(--bg-grad2));
-  overflow-x:hidden;
-}
+    /* Header — centered title only (clock/arrow removed) */
+    .topbar{ display:flex; align-items:center; justify-content:center; padding:6px 0 4px; }
+    .logo{ font-weight:900; letter-spacing:1px; font-size:18px; text-transform:uppercase; background:linear-gradient(90deg,var(--accent),var(--accent-2)); -webkit-background-clip:text; background-clip:text; color:transparent; filter: drop-shadow(0 6px 18px rgba(255,107,74,.3)); }
 
-/* Ambient grain (subtle, performance-friendly) */
-body::after{
-  content:""; position:fixed; inset:-2%;
-  background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1.2px);
-  background-size: 4px 4px;
-  opacity:.25; pointer-events:none; mix-blend-mode: soft-light; z-index:-1;
-}
+    /* Screen handling */
+    .screen{ display:none; animation:fade .28s ease; }
+    .screen.active{ display:block; }
+    @keyframes fade{ from{ opacity:0; transform:translateY(8px) scale(.995);} to{ opacity:1; transform:none; } }
 
-button{font:inherit}
+    /* Blocks & controls */
+    .block{ background: linear-gradient( to bottom right, rgba(255,255,255,.06), rgba(255,255,255,.02) ); border:1px solid rgba(255,255,255,.14); border-radius:20px; padding:16px; box-shadow: var(--shadow-md); backdrop-filter: blur(8px); }
+    .center{text-align:center}
+    .hint{ color:var(--muted); text-align:center; margin:8px 0 0; }
+    .controls{ display:flex; gap:12px; align-items:center; justify-content:center; margin:10px 0; }
+    .step{ width:52px; height:52px; border-radius:16px; border:none; background:rgba(255,255,255,.08); color:#fff; font-weight:900; font-size:22px; cursor:pointer; transition: transform .06s ease; }
+    .step:active{ transform: translateY(1px) scale(.99); }
+    .value{ min-width:106px; height:52px; border-radius:16px; background:rgba(0,0,0,.28); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:18px; border:1px solid rgba(255,255,255,.16); }
+    .primary{ appearance:none; border:none; border-radius:999px; background:linear-gradient(180deg,#111318,#0b0d12); color:#fff; padding:14px 22px; font-weight:800; cursor:pointer; box-shadow:0 12px 38px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); }
+    .primary:hover{ filter:brightness(1.06) saturate(1.05); }
+    .primary:active{ transform:translateY(1px); }
 
-/* App layout */
-.container{
-  max-width:640px;
-  margin:0 auto;
-  min-height:100%;
-  display:grid;
-  grid-template-rows:auto 1fr auto;
-  padding:18px 18px calc(26px + var(--safe-bottom));
-  gap:10px;
-}
+    /* Names list */
+    .names{ display:flex; flex-direction:column; gap:10px; margin-top:8px; max-height:58vh; overflow:auto; padding-right:6px; }
+    .input{ width:100%; padding:14px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.16); background:rgba(0,0,0,.28); color:#fff; outline:none; font-weight:600; }
 
-/* Topbar */
-.topbar{
-  display:flex;align-items:center;justify-content:center;position:relative;
-  padding:10px 0 12px;
-}
-.topbar .title{
-  font-weight:900; letter-spacing:.7px; opacity:.96;
-  text-shadow:0 2px 10px rgba(0,0,0,.35);
-  font-size:18px;
-}
-.topbar .close{
-  position:absolute;right:4px;top:0;bottom:0;margin:auto 0;height:24px;width:24px;
-  display:flex;align-items:center;justify-content:center;opacity:.92;border-radius:10px;
-  background: rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.08);
-  backdrop-filter: blur(6px) saturate(1.2);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-  cursor:pointer;
-}
-.topbar .close:after{
-  content:"";display:block;width:12px;height:12px;border-right:2px solid #fff;border-top:2px solid #fff;transform: rotate(45deg);
-}
+    /* Reveal Stage */
+    .reveal-wrap{ position:relative; height:72vh; max-height:720px; min-height:560px; margin:6px auto 10px; }
 
-/* Screens */
-.screen{display:none;animation:fade .22s ease}
-.screen.active{display:block}
-@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    /* Role field (taller + straight bottom edge) */
+    .word-panel{ position:absolute; left:0; right:0; top:0; height:var(--panelHeight); background: var(--panel); box-shadow: var(--shadow-lg); display:flex; align-items:center; justify-content:center; padding:24px; z-index:1; border-radius: 26px 26px 0 0; /* no bottom curves */ border:1px solid rgba(255,255,255,.12);
+      background-image: radial-gradient(1200px 320px at 50% 0, rgba(255,255,255,.08), transparent 60%), radial-gradient(600px 220px at 50% 100%, rgba(255,255,255,.04), transparent 60%);
+    }
+    .word-panel h1{ margin:0; font-size: clamp(28px, 6.5vw, 56px); letter-spacing: 2px; font-weight: 900; text-align:center; }
 
-/* Blocks & controls */
-.block{
-  background:var(--panel);
-  border:1px solid var(--panel-bd);
-  border-radius:var(--radius);
-  padding:16px 14px;
-  box-shadow: var(--shadow-ambient), inset 0 0 0 1px var(--panel-bd-2);
-  backdrop-filter: blur(14px) saturate(1.1);
-}
-.center{text-align:center}
-.hint{color:var(--muted);text-align:center;margin:8px 0 0}
-.controls{display:flex;gap:12px;align-items:center;justify-content:center;margin:12px 0}
-.step{
-  width:52px;height:52px;border-radius:16px;border:none;
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-  color:#fff;font-weight:900;font-size:22px;cursor:pointer;
-  border:1px solid rgba(255,255,255,.12);
-  box-shadow: 0 10px 26px rgba(0,0,0,.28);
-}
-.step:active{transform:translateY(1px)}
-.step:focus-visible{outline:2px solid rgba(255,122,67,.6); outline-offset:2px}
-.value{
-  min-width:110px;height:52px;border-radius:16px;
-  background:rgba(0,0,0,.28);
-  display:flex;align-items:center;justify-content:center;
-  font-weight:900;font-size:18px;border:1px solid rgba(255,255,255,.16)
-}
-.primary{
-  appearance:none;border:none;border-radius:999px;
-  background: linear-gradient(180deg,#1b1e26,#151821);
-  color:#fff;padding:14px 22px;font-weight:900;cursor:pointer;
-  box-shadow: 0 14px 30px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.10) inset;
-  transition: transform .06s ease, box-shadow .15s ease, filter .2s ease;
-}
-.primary:hover{filter:brightness(1.06)}
-.primary:active{transform:translateY(1px)}
-.primary:focus-visible{outline:2px solid rgba(255,78,149,.65); outline-offset:2px}
+    /* Draggable card */
+    .card{ position:absolute; left:0; right:0; top:0; height:460px; border-radius: var(--cardRadius); overflow:hidden; z-index:2; touch-action:none; cursor:grab; will-change: transform, filter; border: 1px solid rgba(255,255,255,.16); box-shadow: var(--shadow-lg);
+      background: conic-gradient(from 220deg at 80% 20%, rgba(255,255,255,.15), transparent 20%), linear-gradient(180deg, var(--cardTop), var(--cardBot));
+    }
+    .card:active{ cursor:grabbing; }
 
-/* Names list */
-.names{display:flex;flex-direction:column;gap:10px;margin-top:10px;max-height:58vh;overflow:auto;padding-right:6px}
-.input{
-  width:100%;padding:13px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.14);
-  background:rgba(0,0,0,.26);color:#fff;outline:none;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-}
-.input::placeholder{color:rgba(255,255,255,.55)}
+    /* Gloss sheen */
+    .card::after{ content:""; position:absolute; inset:0; background: linear-gradient( to bottom, rgba(255,255,255,.18), transparent 35% ); mix-blend-mode: soft-light; pointer-events:none; }
 
-/* Reveal area */
-.reveal-wrap{
-  position:relative;
-  height: 70vh; max-height: 680px; min-height: 520px;
-  margin: 8px auto 12px;
-}
+    .card-inner{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding:22px; text-align:center; }
+    .player-name{ position:absolute; left:0; right:0; top:22px; text-align:center; font-weight:1000; font-size: clamp(26px, 7.5vw, 48px); text-shadow: 0 6px 22px rgba(0,0,0,.35); letter-spacing:.5px; }
 
-/* Word panel — premium glass + glow edge */
-.word-panel{
-  position:absolute; left:0; right:0; top:0;
-  height:170px;
-  background: var(--panel);
-  border-radius: 22px;
-  box-shadow: var(--shadow-strong), inset 0 0 0 1px var(--panel-bd-2);
-  border: 1px solid var(--panel-bd);
-  display:flex; align-items:center; justify-content:center; padding:18px; z-index:1;
-  backdrop-filter: blur(14px) saturate(1.15);
-  overflow:hidden;
-}
-.word-panel::before{
-  content:""; position:absolute; inset:-1px;
-  border-radius: inherit;
-  background: linear-gradient(140deg, rgba(255,122,67,0.28), rgba(255,78,149,0.25) 40%, transparent 60%);
-  mask: linear-gradient(#000,#000) content-box, linear-gradient(#000,#000);
-  -webkit-mask: linear-gradient(#000,#000) content-box, linear-gradient(#000,#000);
-  padding:1px; opacity:.35; pointer-events:none;
-}
-.word-panel h1{
-  margin:0; font-size: clamp(28px, 7vw, 50px); letter-spacing: 2px; font-weight: 900;
-  text-shadow: 0 6px 18px rgba(0,0,0,.35);
-}
+    .avatar{ position:absolute; left:0; right:0; bottom:92px; margin:0 auto; width: 280px; height: 220px; border-radius: 28px; background: radial-gradient( circle at 46% 36%, #ffd9ab 0%, #f3a064 42%, #e2683f 86% ); filter: saturate(1); opacity:.96; box-shadow: inset 0 -24px 46px rgba(0,0,0,.16), 0 22px 42px rgba(0,0,0,.28); border:1px solid rgba(0,0,0,.18);
+      display:flex; align-items:center; justify-content:center; font-size:64px; }
 
-/* Draggable card — glossy premium gradient + specular sheen */
-.card{
-  position:absolute; left:0; right:0; top:0; height:420px;
-  background:
-    radial-gradient(120% 120% at 20% 0%, rgba(255,255,255,0.20), transparent 46%),
-    linear-gradient(180deg,var(--cardGrad1),var(--cardGrad2));
-  border-radius: var(--cardRadius);
-  box-shadow: var(--shadow-strong);
-  border: 1px solid rgba(255,255,255,0.75);
-  outline: 1px solid rgba(0,0,0,0.10);
-  overflow:hidden; z-index:2; touch-action:none; cursor:grab; will-change: transform, filter;
-}
-.card:active{ cursor:grabbing; }
+    .hint-row{ font-weight:850; font-size:16px; color:#fff; text-shadow:0 3px 10px rgba(0,0,0,.2); display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:auto; margin-bottom:6px; opacity:.98; }
+    .hint-row .tiny{ font-size:12px; opacity:.9; letter-spacing:.2px; }
 
-/* gradient border glow */
-.card::after{
-  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-  background: conic-gradient(from 200deg at 50% 50%, rgba(255,122,67,0.35), rgba(255,78,149,0.35), rgba(255,122,67,0.35));
-  mix-blend-mode: overlay; opacity:.22;
-}
+    /* Footer */
+    .footer{ display:flex; flex-direction:column; align-items:center; gap:10px }
+    .btn{ appearance:none; border:none; border-radius:999px; background:linear-gradient(180deg,#111318,#0b0d12); color:#fff; padding:16px 22px; font-weight:900; cursor:pointer; box-shadow:0 12px 38px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); display:none; }
+    .btn.show{ display:inline-block; animation:pop .22s ease; }
+    @keyframes pop{ from{ transform:scale(.96); opacity:0;} to{ transform:none; opacity:1;} }
+    .pass{ color:var(--muted) }
 
-/* specular swoosh */
-.card::before{
-  content:""; position:absolute; inset:-10% -10% auto -10%; height:55%;
-  background: linear-gradient(160deg, var(--cardSpecular), transparent 40%);
-  transform: translateY(-10%) rotate(-6deg);
-  filter: blur(12px); opacity:.45; pointer-events:none;
-}
+    /* Progress dot rail */
+    .rail{ display:flex; gap:6px; justify-content:center; margin-top:6px; }
+    .dot{ width:8px; height:8px; border-radius:999px; background:rgba(255,255,255,.26); }
+    .dot.active{ background:linear-gradient(180deg,var(--accent-2),var(--accent)); box-shadow:0 0 10px rgba(255,160,64,.45); }
 
-.card-inner{
-  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding:22px; text-align:center;
-}
-.player-name{
-  position:absolute; left:0; right:0; top:24px; text-align:center;
-  font-weight:900; font-size: clamp(26px, 8vw, 48px); color:#fff;
-  text-shadow: 0 3px 16px rgba(0,0,0,.35);
-}
+    /* End */
+    .kudos{ font-weight:1000; font-size:22px; margin:6px 0 2px; text-align:center; }
+    .row{ display:flex; gap:10px; justify-content:center; align-items:center; margin-top:8px }
 
-/* Avatar block — tightened & glossy */
-.avatar{
-  position:absolute; left:0; right:0; bottom:84px; margin:0 auto;
-  width: 260px; height: 210px; border-radius: 28px;
-  background: radial-gradient( circle at 46% 36%, #ffd9ab 0%, #f3a064 42%, #e2683f 86% );
-  filter: saturate(1);
-  opacity:.96;
-  box-shadow: inset 0 -24px 46px rgba(0,0,0,.18), 0 10px 36px rgba(0,0,0,.35);
-}
+    /* Accessibility focus */
+    :focus-visible{ outline:2px solid var(--accent-2); outline-offset:3px }
 
-.hint-row{
-  font-weight:800; font-size:16px; color:#fff; text-shadow:0 3px 10px rgba(0,0,0,.2);
-  display:flex;flex-direction:column;align-items:center;gap:8px; margin-top:auto; margin-bottom:4px;
-}
-.arrow{ width:20px;height:20px;border:3px solid #fff;border-right:0;border-top:0; transform: rotate(-45deg); animation: bob 1.2s ease-in-out infinite }
-@keyframes bob{0%{transform:translateY(0) rotate(-45deg)}50%{transform:translateY(6px) rotate(-45deg)}100%{transform:translateY(0) rotate(-45deg)}}
-
-/* Footer */
-.footer{display:flex;flex-direction:column;align-items:center;gap:10px}
-.btn{
-  appearance:none;border:none;border-radius:999px;background: linear-gradient(180deg,#1b1e26,#151821);
-  color:#fff;padding:14px 22px;font-weight:900;cursor:pointer;
-  box-shadow: 0 14px 30px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.10) inset;
-  display:none;
-}
-.btn.show{display:inline-block}
-.btn:focus-visible{outline:2px solid rgba(255,122,67,.6); outline-offset:2px}
-.pass{color:var(--muted)}
-
-/* End screen */
-.kudos{font-weight:900;font-size:22px;margin:6px 0 2px;text-align:center}
-.row{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:10px}
-
-/* Motion preference */
-@media (prefers-reduced-motion: reduce){
-  .screen{animation:none}
-  .arrow{animation:none}
-}
-</style>
+  </style>
 </head>
 <body>
+  <div class="noise"></div>
+  <div class="grid"></div>
+
   <div class="container">
+    <!-- Header (clean: no clock, no arrow/close) -->
     <div class="topbar">
-      <!-- Removed the clock -->
-      <div class="title">Impostor</div>
-      <div class="close" aria-label="Close"></div>
+      <div class="logo">Impostor</div>
     </div>
 
     <!-- SETUP -->
@@ -273,15 +137,15 @@ button{font:inherit}
         <h3 style="margin:6px 0 8px">New Game</h3>
         <div>Players</div>
         <div class="controls">
-          <button class="step" data-step="players" data-delta="-1" aria-label="Decrease players">–</button>
-          <div id="playersVal" class="value" aria-live="polite">5</div>
-          <button class="step" data-step="players" data-delta="1" aria-label="Increase players">+</button>
+          <button class="step" data-step="players" data-delta="-1">–</button>
+          <div id="playersVal" class="value">5</div>
+          <button class="step" data-step="players" data-delta="1">+</button>
         </div>
         <div style="margin-top:8px">Impostors</div>
         <div class="controls">
-          <button class="step" data-step="imps" data-delta="-1" aria-label="Decrease impostors">–</button>
-          <div id="impsVal" class="value" aria-live="polite">1</div>
-          <button class="step" data-step="imps" data-delta="1" aria-label="Increase impostors">+</button>
+          <button class="step" data-step="imps" data-delta="-1">–</button>
+          <div id="impsVal" class="value">1</div>
+          <button class="step" data-step="imps" data-delta="1">+</button>
         </div>
         <p class="hint">Recommendation adjusts with player count — you can tweak it.</p>
         <button id="goNames" class="primary">Continue</button>
@@ -295,7 +159,7 @@ button{font:inherit}
         <div id="namesList" class="names"></div>
         <div class="row">
           <button id="startGame" class="primary">Start</button>
-          <button id="backSetup" class="primary" style="background:#1a1a1b">Back</button>
+          <button id="backSetup" class="primary" style="background:#16181f">Back</button>
         </div>
         <p class="hint">Leave blanks for default names.</p>
       </div>
@@ -305,19 +169,20 @@ button{font:inherit}
     <section id="reveal" class="screen" aria-label="Swipe down to reveal">
       <div class="reveal-wrap" id="wrap">
         <div id="panel" class="word-panel"><h1 id="word">WORD</h1></div>
-
         <div id="card" class="card" role="button" aria-label="Swipe down to reveal your word" tabindex="0">
           <div class="card-inner">
             <div class="player-name" id="pname">Player</div>
-            <div class="avatar" aria-hidden="true"></div>
+            <div class="avatar" id="avatar" aria-hidden="true">🙂</div>
             <div class="hint-row">
-              <div class="arrow" aria-hidden="true"></div>
-              <div>Move down to reveal</div>
+              <div>Swipe down to reveal</div>
+              <div class="tiny">(Tap SPACE/ENTER also works)</div>
             </div>
           </div>
         </div>
+        <canvas id="confetti" style="position:absolute;inset:0;pointer-events:none"></canvas>
       </div>
       <div class="footer">
+        <div class="rail" id="rail"></div>
         <button id="next" class="btn">Next Player</button>
         <div class="pass">Pass device to the next player</div>
       </div>
@@ -329,195 +194,239 @@ button{font:inherit}
       <p class="hint">Start another round or change players.</p>
       <div class="row">
         <button id="again" class="primary">New Round (same players)</button>
-        <button id="toSetup" class="primary" style="background:#1a1a1b">Setup</button>
+        <button id="toSetup" class="primary" style="background:#16181f">Setup</button>
       </div>
     </section>
   </div>
 
-<script>
-/* ================= Words (exactly 10) ================= */
-const WORDS = [
-  "Volcano","Umbrella","Backpack","Lighthouse","Lantern",
-  "Mirror","Telescope","Pancakes","Compass","Rocket"
-];
+  <script>
+    /* ================= Words (exactly 10) ================= */
+    const WORDS = [
+      "Volcano","Umbrella","Backpack","Lighthouse","Lantern",
+      "Mirror","Telescope","Pancakes","Compass","Rocket"
+    ];
 
-/* ================= State ================= */
-let playersCount = 5;
-let impostors = 1;
-let players = [];
-let secretWord = "";
-let impIdx = [];
-let current = 0;
+    /* ================= State ================= */
+    let playersCount = 5;
+    let impostors = 1;
+    let players = [];
+    let secretWord = "";
+    let impIdx = [];
+    let current = 0;
 
-/* ================= Elements ================= */
-const screens = mapEls('#setup','#names','#reveal','#end');
-const playersVal = qs('#playersVal'), impsVal = qs('#impsVal');
-const goNamesBtn = qs('#goNames'), startGameBtn = qs('#startGame'), backSetupBtn = qs('#backSetup');
-const namesList = qs('#namesList');
-const wrap = qs('#wrap'), card = qs('#card'), panel = qs('#panel');
-const pname = qs('#pname'), wordEl = qs('#word'), nextBtn = qs('#next');
-const againBtn = qs('#again'), toSetupBtn = qs('#toSetup');
+    /* ================= Elements ================= */
+    const screens = mapEls('#setup','#names','#reveal','#end');
+    const playersVal = qs('#playersVal'), impsVal = qs('#impsVal');
+    const goNamesBtn = qs('#goNames'), startGameBtn = qs('#startGame'), backSetupBtn = qs('#backSetup');
+    const namesList = qs('#namesList');
+    const wrap = qs('#wrap'), card = qs('#card'), panel = qs('#panel');
+    const pname = qs('#pname'), wordEl = qs('#word'), nextBtn = qs('#next');
+    const againBtn = qs('#again'), toSetupBtn = qs('#toSetup');
+    const rail = qs('#rail');
+    const confetti = qs('#confetti');
+    const avatar = qs('#avatar');
 
-/* ================= Setup controls ================= */
-onAll('.step','click',(btn)=>{
-  const type = btn.dataset.step, delta = parseInt(btn.dataset.delta,10);
-  if(type==='players'){
-    playersCount = clamp(playersCount+delta,3,30);
-    playersVal.textContent = playersCount;
-    const rec = recommendImpostors(playersCount);
-    if(impostors!==rec){ impostors=rec; impsVal.textContent=impostors; }
-  }else{
-    impostors = clamp(impostors+delta,1,Math.max(1,playersCount-1));
-    impsVal.textContent = impostors;
-  }
-  haptic(6);
-});
+    /* ================= Setup controls ================= */
+    onAll('.step','click',(btn)=>{
+      const type = btn.dataset.step, delta = parseInt(btn.dataset.delta,10);
+      if(type==='players'){
+        playersCount = clamp(playersCount+delta,3,30);
+        playersVal.textContent = playersCount;
+        const rec = recommendImpostors(playersCount);
+        if(impostors!==rec){ impostors=rec; impsVal.textContent=impostors; }
+      }else{
+        impostors = clamp(impostors+delta,1,Math.max(1,playersCount-1));
+        impsVal.textContent = impostors;
+      }
+      haptic(6);
+    });
 
-goNamesBtn.addEventListener('click', ()=>{
-  show('names');
-  namesList.innerHTML='';
-  for(let i=0;i<playersCount;i++){
-    const div=document.createElement('div');
-    const inp=document.createElement('input');
-    inp.className='input'; inp.placeholder=`Player ${i+1}`; inp.id=`p_${i}`;
-    div.appendChild(inp); namesList.appendChild(div);
-  }
-});
+    goNamesBtn.addEventListener('click', ()=>{
+      show('names');
+      namesList.innerHTML='';
+      for(let i=0;i<playersCount;i++){
+        const div=document.createElement('div');
+        const inp=document.createElement('input');
+        inp.className='input';
+        inp.placeholder=`Player ${i+1}`;
+        inp.id=`p_${i}`;
+        div.appendChild(inp);
+        namesList.appendChild(div);
+      }
+    });
 
-backSetupBtn.addEventListener('click', ()=> show('setup'));
+    backSetupBtn.addEventListener('click', ()=> show('setup'));
 
-startGameBtn.addEventListener('click', ()=>{
-  players=[];
-  for(let i=0;i<playersCount;i++){
-    const v=(qs(`#p_${i}`).value||'').trim();
-    players.push(v || `Player ${i+1}`);
-  }
-  beginRound();
-});
+    startGameBtn.addEventListener('click', ()=>{
+      players=[];
+      for(let i=0;i<playersCount;i++){
+        const v=(qs(`#p_${i}`).value||'').trim();
+        players.push(v || `Player ${i+1}`);
+      }
+      beginRound();
+    });
 
-/* ================= Round ================= */
-function beginRound(){
-  secretWord = WORDS[(Math.random()*WORDS.length)|0];
-  impIdx = pickUnique(players.length, Math.min(impostors, Math.max(1, players.length-1)));
-  current = 0;
-  show('reveal');
-  prepareCard();
-}
+    /* ================= Round ================= */
+    function beginRound(){
+      secretWord = WORDS[(Math.random()*WORDS.length)|0];
+      impIdx = pickUnique(players.length, Math.min(impostors, Math.max(1, players.length-1)));
+      current = 0;
+      buildRail();
+      show('reveal');
+      prepareCard();
+      sizeConfetti();
+    }
 
-/* ================= Reveal (swipe-down + bounce-back) ================= */
-let drag = {active:false, startY:0, prevY:0, vy:0, offset:0, peak:0, revealed:false};
-let maxDrop = 0;
+    function buildRail(){
+      rail.innerHTML='';
+      for(let i=0;i<players.length;i++){
+        const d=document.createElement('div');
+        d.className='dot'+(i===0?' active':'');
+        rail.appendChild(d);
+      }
+    }
 
-function pxVar(name){
-  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return parseFloat(v.replace('px','')) || 0;
-}
-function measure(){
-  const panelRect = panel.getBoundingClientRect();
-  const cardRect  = card.getBoundingClientRect();
-  const wrapRect  = wrap.getBoundingClientRect();
-  const gap = pxVar('--end-gap');
-  let target = panelRect.height + gap;
-  const maxAllowed = Math.max(0, wrapRect.height - cardRect.height - 12);
-  maxDrop = Math.min(target, maxAllowed);
-}
+    /* ================= Reveal (swipe-down + bounce-back + tilt) ================= */
+    let drag = {active:false, startY:0, prevY:0, vy:0, offset:0, peak:0, revealed:false};
+    let maxDrop = 0;
 
-function prepareCard(){
-  // Sync UI
-  measure();
-  drag.revealed=false; drag.offset=0; drag.peak=0;
-  setY(0); nextBtn.classList.remove('show');
-  pname.textContent = players[current];
-  const isImp = impIdx.includes(current);
-  wordEl.textContent = isImp ? "You are the Impostor!" : secretWord;
-}
+    function pxVar(name){
+      const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      return parseFloat(v.replace('px','')) || 0;
+    }
 
-function setY(px){ card.style.transform = `translateY(${px}px)`; }
-function springTo(target,{stiffness=420,damping=16,v0=0}={}){
-  let y = parseFloat((card.style.transform||'').match(/-?\d+\.?\d*/)?.[0] || 0);
-  let v = v0; const dt = 1/60;
-  function step(){
-    const a = -stiffness*(y-target) - damping*v;
-    v += a*dt; y += v*dt; setY(y);
-    if (Math.abs(y-target) < 0.6 && Math.abs(v) < 0.6){ setY(target); return; }
-    requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-function haptic(n){ if(navigator.vibrate) navigator.vibrate(n); }
-function blip(freq=560,time=.12){
-  try{
-    const ctx=new (window.AudioContext||window.webkitAudioContext)();
-    const o=ctx.createOscillator(), g=ctx.createGain();
-    o.type='triangle'; o.frequency.value=freq; g.gain.value=0; o.connect(g); g.connect(ctx.destination);
-    const t=ctx.currentTime; g.gain.linearRampToValueAtTime(.06,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+time);
-    o.start(t); o.stop(t+time+.02);
-  }catch(e){}
-}
+    function measure(){
+      const panelRect = panel.getBoundingClientRect();
+      const cardRect = card.getBoundingClientRect();
+      const wrapRect = wrap.getBoundingClientRect();
+      const gap = pxVar('--dragGap');
+      let target = panelRect.height + gap;
+      const maxAllowed = Math.max(0, wrapRect.height - cardRect.height - 12);
+      maxDrop = Math.min(target, maxAllowed);
+    }
 
-card.addEventListener('pointerdown', (e)=>{
-  card.setPointerCapture(e.pointerId);
-  drag.active=true; drag.startY=e.clientY; drag.prevY=e.clientY; drag.vy=0;
-});
-card.addEventListener('pointermove', (e)=>{
-  if(!drag.active) return;
-  const y=e.clientY; const dy=y-drag.prevY; drag.prevY=y;
-  drag.vy = 0.7*drag.vy + 0.3*dy;
-  let newOffset = Math.max(0, Math.min(maxDrop, drag.offset + dy)); // only DOWN
-  drag.offset = newOffset; if(newOffset>drag.peak) drag.peak = newOffset;
-  setY(newOffset);
-});
-card.addEventListener('pointerup', release);
-card.addEventListener('pointercancel', release);
+    function prepareCard(){
+      // Sync UI
+      measure();
+      drag.revealed=false; drag.offset=0; drag.peak=0; setY(0); setTilt(0,0);
+      nextBtn.classList.remove('show');
+      pname.textContent = players[current];
+      avatar.textContent = randEmoji();
+      const isImp = impIdx.includes(current);
+      wordEl.textContent = isImp ? "You are the Impostor!" : secretWord;
+      // highlight rail
+      Array.from(rail.children).forEach((d,i)=>d.classList.toggle('active', i===current));
+    }
 
-function release(){
-  if(!drag.active) return;
-  drag.active=false;
-  const pulledEnough = drag.peak >= maxDrop*0.90;
-  haptic(8);
-  springTo(0,{stiffness:440,damping:16,v0:-drag.vy*0.9}); // always bounce back
-  drag.offset=0;
-  if(pulledEnough && !drag.revealed){
-    drag.revealed=true;
-    nextBtn.classList.add('show');
-    haptic([16,60,16]); blip(620,.10);
-  }
-}
+    function setY(px){ card.style.transform = `translateY(${px}px)`; }
+    function setTilt(rx,ry){ card.style.filter = `drop-shadow(0 18px 28px rgba(0,0,0,.35))`; card.style.transform += ` rotateX(${rx}deg) rotateY(${ry}deg)`; }
 
-card.addEventListener('keydown', (e)=>{
-  if((e.key==='Enter'||e.key===' ') && !drag.revealed){
-    e.preventDefault();
-    drag.revealed=true; nextBtn.classList.add('show'); haptic([16,60,16]); blip();
-    springTo(0,{stiffness:440,damping:16});
-  }
-});
+    function springTo(target,{stiffness=520,damping=18,v0=0}={}){
+      let y = parseFloat((card.style.transform||'').match(/-?\d+\.?\d*/)?.[0] || 0);
+      let v = v0;
+      const dt = 1/60;
+      function step(){
+        const a = -stiffness*(y-target) - damping*v;
+        v += a*dt;
+        y += v*dt;
+        card.style.transform = `translateY(${y}px)`; // reset tilt during spring
+        if (Math.abs(y-target) < 0.6 && Math.abs(v) < 0.6){
+          card.style.transform = `translateY(${target}px)`;
+          return;
+        }
+        requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
 
-nextBtn.addEventListener('click', ()=>{
-  if(current+1>=players.length){
-    show('end');
-  }else{
-    current++;
-    prepareCard();
-  }
-});
+    function haptic(n){ if(navigator.vibrate) navigator.vibrate(n); }
 
-/* ================= End / Navigation ================= */
-againBtn.addEventListener('click', ()=> beginRound());
-toSetupBtn.addEventListener('click', ()=> show('setup'));
+    function blip(freq=560,time=.12){
+      try{
+        const ctx=new (window.AudioContext||window.webkitAudioContext)();
+        const o=ctx.createOscillator(), g=ctx.createGain();
+        o.type='triangle'; o.frequency.value=freq; g.gain.value=0; o.connect(g); g.connect(ctx.destination);
+        const t=ctx.currentTime; g.gain.linearRampToValueAtTime(.06,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+time); o.start(t); o.stop(t+time+.02);
+      }catch(e){}
+    }
 
-/* ================= Utils ================= */
-function show(key){
-  Object.values(screens).forEach(s=>s.classList.remove('active'));
-  screens[key].classList.add('active');
-}
-function qs(sel){ return document.querySelector(sel); }
-function mapEls(...sel){ const o={}; sel.forEach(s=>o[s.slice(1)]=qs(s)); return o; }
-function onAll(sel,ev,cb){ document.querySelectorAll(sel).forEach(n=>n.addEventListener(ev,()=>cb(n))); }
-function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
-function recommendImpostors(n){ if(n<=6)return 1; if(n<=10)return 2; if(n<=14)return 3; if(n<=18)return 4; return Math.floor(n/4); }
-function pickUnique(n,k){ const arr=Array.from({length:n},(_,i)=>i); for(let i=arr.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]];} return arr.slice(0,k).sort((a,b)=>a-b); }
+    // 3D tilt on pointer move
+    card.addEventListener('pointermove', (e)=>{
+      const r = card.getBoundingClientRect();
+      const cx = r.left + r.width/2, cy = r.top + r.height/2;
+      const dx = (e.clientX - cx)/r.width, dy = (e.clientY - cy)/r.height;
+      const maxTilt = 6;
+      const rx = clamp(-dy*maxTilt, -maxTilt, maxTilt);
+      const ry = clamp(dx*maxTilt, -maxTilt, maxTilt);
+      card.style.transform = `translateY(${drag.offset}px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+    });
 
-/* Removed fake clock code */
-</script>
+    // Drag mechanics
+    card.addEventListener('pointerdown', (e)=>{
+      card.setPointerCapture(e.pointerId);
+      drag.active=true; drag.startY=e.clientY; drag.prevY=e.clientY; drag.vy=0;
+    });
+
+    card.addEventListener('pointermove', (e)=>{
+      if(!drag.active) return;
+      const y=e.clientY; const dy=y-drag.prevY; drag.prevY=y; drag.vy = 0.7*drag.vy + 0.3*dy;
+      let newOffset = Math.max(0, Math.min(maxDrop, drag.offset + dy)); // only DOWN
+      drag.offset = newOffset; if(newOffset>drag.peak) drag.peak = newOffset; setY(newOffset);
+    });
+
+    card.addEventListener('pointerup', release); card.addEventListener('pointercancel', release);
+    function release(){
+      if(!drag.active) return; drag.active=false;
+      const pulledEnough = drag.peak >= maxDrop*0.90;
+      haptic(8); springTo(0,{stiffness:560,damping:18,v0:-drag.vy*0.9}); // always bounce back
+      drag.offset=0;
+      if(pulledEnough && !drag.revealed){ drag.revealed=true; nextBtn.classList.add('show'); haptic([16,60,16]); blip(620,.10); confettiBurst(); }
+    }
+
+    // Keyboard accessibility
+    card.addEventListener('keydown', (e)=>{
+      if((e.key==='Enter'||e.key===' ') && !drag.revealed){ e.preventDefault(); drag.revealed=true; nextBtn.classList.add('show'); haptic([16,60,16]); blip(); springTo(0,{stiffness:560,damping:18}); confettiBurst(); }
+    });
+
+    nextBtn.addEventListener('click', ()=>{
+      if(current+1>=players.length){ show('end'); }
+      else{ current++; drag.revealed=false; prepareCard(); }
+    });
+
+    /* ================= Confetti ================= */
+    let ctx, W, H, parts=[];
+    function sizeConfetti(){ confetti.width = W = wrap.clientWidth; confetti.height = H = wrap.clientHeight; ctx = confetti.getContext('2d'); }
+    window.addEventListener('resize', sizeConfetti, {passive:true});
+
+    function confettiBurst(){
+      sizeConfetti();
+      parts = Array.from({length:80}, ()=>({
+        x: W/2 + (Math.random()*120-60), y: (Math.random()*40)+40,
+        vx: (Math.random()*2-1)*4, vy: Math.random()*-3-2,
+        g: .18 + Math.random()*.06, r: Math.random()*6+2, a: 1, spin: Math.random()*6
+      }));
+      let t=0; (function loop(){ t++; ctx.clearRect(0,0,W,H);
+        for(const p of parts){ p.vy += p.g; p.x += p.vx; p.y += p.vy; p.spin += .2; p.a -= .009; ctx.save(); ctx.globalAlpha=Math.max(0,p.a); ctx.translate(p.x,p.y); ctx.rotate(p.spin); const grd = ctx.createLinearGradient(-p.r,-p.r,p.r,p.r); grd.addColorStop(0,'#ffd06b'); grd.addColorStop(1,'#ff6b4a'); ctx.fillStyle=grd; ctx.fillRect(-p.r,-p.r,p.r*2,p.r*2); ctx.restore(); }
+        if(t<240) requestAnimationFrame(loop);
+      })();
+    }
+
+    /* ================= End / Navigation ================= */
+    againBtn.addEventListener('click', ()=> beginRound());
+    toSetupBtn.addEventListener('click', ()=> show('setup'));
+
+    /* ================= Utils ================= */
+    function show(key){ Object.values(screens).forEach(s=>s.classList.remove('active')); screens[key].classList.add('active'); }
+    function qs(sel){ return document.querySelector(sel); }
+    function mapEls(...sel){ const o={}; sel.forEach(s=>o[s.slice(1)]=qs(s)); return o; }
+    function onAll(sel,ev,cb){ document.querySelectorAll(sel).forEach(n=>n.addEventListener(ev,()=>cb(n))); }
+    function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+    function recommendImpostors(n){ if(n<=6)return 1; if(n<=10)return 2; if(n<=14)return 3; if(n<=18)return 4; return Math.floor(n/4); }
+    function pickUnique(n,k){ const arr=Array.from({length:n},(_,i)=>i); for(let i=arr.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]];} return arr.slice(0,k).sort((a,b)=>a-b); }
+    function randEmoji(){ const s = ['🙂','😎','🤖','👽','🧠','🦊','🐼','🐵','🐯','🦄','🐸','🐙','🦖','🐺','🦁','🐨']; return s[(Math.random()*s.length)|0]; }
+
+    // Resize bounds & safe panel calculation
+    new ResizeObserver(()=>measure()).observe(wrap);
+  </script>
 </body>
 </html>
