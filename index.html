@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Impostor — Swipe Down</title>
+<style>
+:root{
+  --bg:#e95749;            /* coral red background */
+  --panel:#111214;         /* black word panel */
+  --cardGrad1:#ffb869;     /* orange card gradient light */
+  --cardGrad2:#ff7a43;     /* orange card gradient dark */
+  --white:#ffffff;
+  --muted: rgba(255,255,255,0.85);
+  --radius: 26px;
+  --cardRadius: 26px;
+  --shadow: 0 22px 60px rgba(0,0,0,0.35);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --end-gap: 12px;         /* gap between panel and card at max drag */
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  -webkit-text-size-adjust:100%;
+  color:var(--white);
+  background: var(--bg);
+}
+button{font:inherit}
+
+/* App layout */
+.container{
+  max-width:560px;
+  margin:0 auto;
+  min-height:100%;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  padding:16px 16px calc(24px + var(--safe-bottom));
+}
+.topbar{
+  display:flex;align-items:center;justify-content:center;position:relative;
+  padding:8px 0 10px;
+}
+.topbar .title{font-weight:800; letter-spacing:.6px; opacity:.95}
+.topbar .close{position:absolute;right:6px;top:0;bottom:0;margin:auto 0;height:20px;width:20px;display:flex;align-items:center;justify-content:center;opacity:.9}
+.topbar .close:after{
+  content:"";display:block;width:18px;height:18px;border-right:2px solid #fff;border-top:2px solid #fff;transform: rotate(45deg);
+}
+.clock{position:absolute;left:6px;top:0;bottom:0;margin:auto 0;font-weight:600;opacity:.9}
+
+.screen{display:none;animation:fade .22s ease}
+.screen.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* Blocks & controls */
+.block{
+  background:rgba(255,255,255,0.10);
+  border:1px solid rgba(255,255,255,0.18);
+  border-radius:18px;padding:14px;box-shadow:0 12px 34px rgba(0,0,0,.18);
+}
+.center{text-align:center}
+.hint{color:var(--muted);text-align:center;margin:8px 0 0}
+.controls{display:flex;gap:12px;align-items:center;justify-content:center;margin:10px 0}
+.step{width:48px;height:48px;border-radius:14px;border:none;background:rgba(0,0,0,.2);color:#fff;font-weight:900;font-size:22px;cursor:pointer}
+.value{min-width:96px;height:48px;border-radius:14px;background:rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;border:1px solid rgba(255,255,255,.16)}
+.primary{appearance:none;border:none;border-radius:999px;background:#101113;color:#fff;padding:14px 20px;font-weight:800;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.28)}
+.primary:active{transform:translateY(1px)}
+
+/* Names list */
+.names{display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:58vh;overflow:auto;padding-right:6px}
+.input{
+  width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.16);
+  background:rgba(0,0,0,.18);color:#fff;outline:none
+}
+
+/* Reveal area */
+.reveal-wrap{
+  position:relative;
+  height: 70vh; max-height: 680px; min-height: 520px;
+  margin: 6px auto 10px;
+}
+.word-panel{
+  position:absolute; left:0; right:0; top:0;
+  height: 170px; background: var(--panel); border-radius: 22px; box-shadow: var(--shadow);
+  display:flex; align-items:center; justify-content:center; padding:18px; z-index:1;
+}
+.word-panel h1{
+  margin:0; font-size: clamp(28px, 7vw, 50px); letter-spacing: 2px; font-weight: 900;
+}
+/* Draggable card above panel */
+.card{
+  position:absolute; left:0; right:0; top:0; height:420px;
+  background: linear-gradient(180deg,var(--cardGrad1),var(--cardGrad2));
+  border-radius: var(--cardRadius); box-shadow: var(--shadow);
+  border: 4px solid #fff; overflow:hidden; z-index:2; touch-action:none; cursor:grab; will-change: transform;
+}
+.card:active{ cursor:grabbing; }
+.card-inner{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding:22px; text-align:center; }
+.player-name{
+  position:absolute; left:0; right:0; top:24px; text-align:center;
+  font-weight:900; font-size: clamp(26px, 8vw, 48px); color:#fff; text-shadow: 0 3px 12px rgba(0,0,0,.24);
+}
+.avatar{
+  position:absolute; left:0; right:0; bottom:78px; margin:0 auto;
+  width: 280px; height: 220px; border-radius: 28px;
+  background: radial-gradient( circle at 46% 36%, #ffd9ab 0%, #f3a064 42%, #e2683f 86% );
+  filter: saturate(1); opacity:.95; box-shadow: inset 0 -24px 46px rgba(0,0,0,.16);
+}
+.hint-row{
+  font-weight:800; font-size:16px; color:#fff; text-shadow:0 3px 10px rgba(0,0,0,.2);
+  display:flex;flex-direction:column;align-items:center;gap:8px; margin-top:auto; margin-bottom:4px;
+}
+.arrow{ width:20px;height:20px;border:3px solid #fff;border-right:0;border-top:0; transform: rotate(-45deg); animation: bob 1.2s ease-in-out infinite }
+@keyframes bob{0%{transform:translateY(0) rotate(-45deg)}50%{transform:translateY(6px) rotate(-45deg)}100%{transform:translateY(0) rotate(-45deg)}}
+
+/* Footer */
+.footer{display:flex;flex-direction:column;align-items:center;gap:10px}
+.btn{appearance:none;border:none;border-radius:999px;background:#101113;color:#fff;padding:14px 20px;font-weight:800;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.28);display:none}
+.btn.show{display:inline-block}
+.pass{color:var(--muted)}
+
+/* End */
+.kudos{font-weight:900;font-size:22px;margin:6px 0 2px;text-align:center}
+.row{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:8px}
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="clock" id="clock">16:15</div>
+      <div class="title">Impostor</div>
+      <div class="close" aria-label="Close"></div>
+    </div>
+
+    <!-- SETUP -->
+    <section id="setup" class="screen active">
+      <div class="block center">
+        <h3 style="margin:6px 0 8px">New Game</h3>
+        <div>Players</div>
+        <div class="controls">
+          <button class="step" data-step="players" data-delta="-1">–</button>
+          <div id="playersVal" class="value">5</div>
+          <button class="step" data-step="players" data-delta="1">+</button>
+        </div>
+        <div style="margin-top:8px">Impostors</div>
+        <div class="controls">
+          <button class="step" data-step="imps" data-delta="-1">–</button>
+          <div id="impsVal" class="value">1</div>
+          <button class="step" data-step="imps" data-delta="1">+</button>
+        </div>
+        <p class="hint">Recommendation adjusts with player count — you can tweak it.</p>
+        <button id="goNames" class="primary">Continue</button>
+      </div>
+    </section>
+
+    <!-- NAMES -->
+    <section id="names" class="screen">
+      <div class="block">
+        <h3 class="center" style="margin:6px 0 10px">Player Names</h3>
+        <div id="namesList" class="names"></div>
+        <div class="row">
+          <button id="startGame" class="primary">Start</button>
+          <button id="backSetup" class="primary" style="background:#1a1a1b">Back</button>
+        </div>
+        <p class="hint">Leave blanks for default names.</p>
+      </div>
+    </section>
+
+    <!-- REVEAL -->
+    <section id="reveal" class="screen" aria-label="Swipe down to reveal">
+      <div class="reveal-wrap" id="wrap">
+        <div id="panel" class="word-panel"><h1 id="word">WORD</h1></div>
+
+        <div id="card" class="card" role="button" aria-label="Swipe down to reveal your word" tabindex="0">
+          <div class="card-inner">
+            <div class="player-name" id="pname">Player</div>
+            <div class="avatar" aria-hidden="true"></div>
+            <div class="hint-row">
+              <div class="arrow" aria-hidden="true"></div>
+              <div>Move down to reveal</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <button id="next" class="btn">Next Player</button>
+        <div class="pass">Pass device to the next player</div>
+      </div>
+    </section>
+
+    <!-- END -->
+    <section id="end" class="screen">
+      <div class="kudos">Everyone saw their roles 🎉</div>
+      <p class="hint">Start another round or change players.</p>
+      <div class="row">
+        <button id="again" class="primary">New Round (same players)</button>
+        <button id="toSetup" class="primary" style="background:#1a1a1b">Setup</button>
+      </div>
+    </section>
+  </div>
+
+<script>
+/* ================= Words (exactly 10) ================= */
+const WORDS = [
+  "Volcano","Umbrella","Backpack","Lighthouse","Lantern",
+  "Mirror","Telescope","Pancakes","Compass","Rocket"
+];
+
+/* ================= State ================= */
+let playersCount = 5;
+let impostors = 1;
+let players = [];
+let secretWord = "";
+let impIdx = [];
+let current = 0;
+
+/* ================= Elements ================= */
+const screens = mapEls('#setup','#names','#reveal','#end');
+const playersVal = qs('#playersVal'), impsVal = qs('#impsVal');
+const goNamesBtn = qs('#goNames'), startGameBtn = qs('#startGame'), backSetupBtn = qs('#backSetup');
+const namesList = qs('#namesList');
+const wrap = qs('#wrap'), card = qs('#card'), panel = qs('#panel');
+const pname = qs('#pname'), wordEl = qs('#word'), nextBtn = qs('#next');
+const againBtn = qs('#again'), toSetupBtn = qs('#toSetup');
+
+/* ================= Setup controls ================= */
+onAll('.step','click',(btn)=>{
+  const type = btn.dataset.step, delta = parseInt(btn.dataset.delta,10);
+  if(type==='players'){
+    playersCount = clamp(playersCount+delta,3,30);
+    playersVal.textContent = playersCount;
+    const rec = recommendImpostors(playersCount);
+    if(impostors!==rec){ impostors=rec; impsVal.textContent=impostors; }
+  }else{
+    impostors = clamp(impostors+delta,1,Math.max(1,playersCount-1));
+    impsVal.textContent = impostors;
+  }
+  haptic(6);
+});
+
+goNamesBtn.addEventListener('click', ()=>{
+  show('names');
+  namesList.innerHTML='';
+  for(let i=0;i<playersCount;i++){
+    const div=document.createElement('div');
+    const inp=document.createElement('input');
+    inp.className='input'; inp.placeholder=`Player ${i+1}`; inp.id=`p_${i}`;
+    div.appendChild(inp); namesList.appendChild(div);
+  }
+});
+
+backSetupBtn.addEventListener('click', ()=> show('setup'));
+
+startGameBtn.addEventListener('click', ()=>{
+  players=[];
+  for(let i=0;i<playersCount;i++){
+    const v=(qs(`#p_${i}`).value||'').trim();
+    players.push(v || `Player ${i+1}`);
+  }
+  beginRound();
+});
+
+/* ================= Round ================= */
+function beginRound(){
+  secretWord = WORDS[(Math.random()*WORDS.length)|0];
+  impIdx = pickUnique(players.length, Math.min(impostors, Math.max(1, players.length-1)));
+  current = 0;
+  show('reveal');
+  prepareCard();
+}
+
+/* ================= Reveal (swipe-down + bounce-back) ================= */
+let drag = {active:false, startY:0, prevY:0, vy:0, offset:0, peak:0, revealed:false};
+let maxDrop = 0;
+
+function pxVar(name){
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return parseFloat(v.replace('px','')) || 0;
+}
+function measure(){
+  const panelRect = panel.getBoundingClientRect();
+  const cardRect  = card.getBoundingClientRect();
+  const wrapRect  = wrap.getBoundingClientRect();
+  const gap = pxVar('--end-gap');
+  let target = panelRect.height + gap;
+  const maxAllowed = Math.max(0, wrapRect.height - cardRect.height - 12);
+  maxDrop = Math.min(target, maxAllowed);
+}
+
+function prepareCard(){
+  // Sync UI
+  measure();
+  drag.revealed=false; drag.offset=0; drag.peak=0;
+  setY(0); nextBtn.classList.remove('show');
+  pname.textContent = players[current];
+  const isImp = impIdx.includes(current);
+  wordEl.textContent = isImp ? "You are the Impostor!" : secretWord;
+}
+
+function setY(px){ card.style.transform = `translateY(${px}px)`; }
+function springTo(target,{stiffness=420,damping=16,v0=0}={}){
+  let y = parseFloat((card.style.transform||'').match(/-?\d+\.?\d*/)?.[0] || 0);
+  let v = v0; const dt = 1/60;
+  function step(){
+    const a = -stiffness*(y-target) - damping*v;
+    v += a*dt; y += v*dt; setY(y);
+    if (Math.abs(y-target) < 0.6 && Math.abs(v) < 0.6){ setY(target); return; }
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+function haptic(n){ if(navigator.vibrate) navigator.vibrate(n); }
+function blip(freq=560,time=.12){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type='triangle'; o.frequency.value=freq; g.gain.value=0; o.connect(g); g.connect(ctx.destination);
+    const t=ctx.currentTime; g.gain.linearRampToValueAtTime(.06,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+time);
+    o.start(t); o.stop(t+time+.02);
+  }catch(e){}
+}
+
+card.addEventListener('pointerdown', (e)=>{
+  card.setPointerCapture(e.pointerId);
+  drag.active=true; drag.startY=e.clientY; drag.prevY=e.clientY; drag.vy=0;
+});
+card.addEventListener('pointermove', (e)=>{
+  if(!drag.active) return;
+  const y=e.clientY; const dy=y-drag.prevY; drag.prevY=y;
+  drag.vy = 0.7*drag.vy + 0.3*dy;
+  let newOffset = Math.max(0, Math.min(maxDrop, drag.offset + dy)); // only DOWN
+  drag.offset = newOffset; if(newOffset>drag.peak) drag.peak = newOffset;
+  setY(newOffset);
+});
+card.addEventListener('pointerup', release);
+card.addEventListener('pointercancel', release);
+
+function release(){
+  if(!drag.active) return;
+  drag.active=false;
+  const pulledEnough = drag.peak >= maxDrop*0.90;
+  haptic(8);
+  springTo(0,{stiffness:440,damping:16,v0:-drag.vy*0.9}); // always bounce back
+  drag.offset=0;
+  if(pulledEnough && !drag.revealed){
+    drag.revealed=true;
+    nextBtn.classList.add('show');
+    haptic([16,60,16]); blip(620,.10);
+  }
+}
+
+card.addEventListener('keydown', (e)=>{
+  if((e.key==='Enter'||e.key===' ') && !drag.revealed){
+    e.preventDefault();
+    drag.revealed=true; nextBtn.classList.add('show'); haptic([16,60,16]); blip();
+    springTo(0,{stiffness:440,damping:16});
+  }
+});
+
+nextBtn.addEventListener('click', ()=>{
+  if(current+1>=players.length){
+    show('end');
+  }else{
+    current++;
+    prepareCard();
+  }
+});
+
+/* ================= End / Navigation ================= */
+againBtn.addEventListener('click', ()=> beginRound());
+toSetupBtn.addEventListener('click', ()=> show('setup'));
+
+/* ================= Utils ================= */
+function show(key){
+  Object.values(screens).forEach(s=>s.classList.remove('active'));
+  screens[key].classList.add('active');
+}
+function qs(sel){ return document.querySelector(sel); }
+function mapEls(...sel){ const o={}; sel.forEach(s=>o[s.slice(1)]=qs(s)); return o; }
+function onAll(sel,ev,cb){ document.querySelectorAll(sel).forEach(n=>n.addEventListener(ev,()=>cb(n))); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function recommendImpostors(n){ if(n<=6)return 1; if(n<=10)return 2; if(n<=14)return 3; if(n<=18)return 4; return Math.floor(n/4); }
+function pickUnique(n,k){ const arr=Array.from({length:n},(_,i)=>i); for(let i=arr.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]];} return arr.slice(0,k).sort((a,b)=>a-b); }
+
+/* Clock (static demo look) */
+(function keepFakeClock(){
+  const el=document.getElementById('clock');
+  function pad(n){return (n<10?'0':'')+n;}
+  const d=new Date(); el.textContent=`${pad(d.getHours())}:${pad(d.getMinutes())}`;
+})();
+</script>
+</body>
+</html>
