@@ -3,110 +3,232 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
 <title>Impostor — Swipe Down</title>
 <style>
+/* === Design tokens (2025 polish) === */
 :root{
-  --bg:#e95749;            /* coral red background */
-  --panel:#111214;         /* black word panel */
-  --cardGrad1:#ffb869;     /* orange card gradient light */
-  --cardGrad2:#ff7a43;     /* orange card gradient dark */
+  /* Brand / ambiance */
+  --bg:#0f1115;                 /* deep canvas */
+  --bg-grad1:#171a21;           /* subtle gradient stop */
+  --bg-grad2:#0f1115;
+  --glow1:#ff7a43;              /* warm accent A */
+  --glow2:#ff4e95;              /* warm accent B */
+
+  /* Surfaces */
+  --panel: rgba(20,22,28,0.68);  /* glass panel */
+  --panel-bd: rgba(255,255,255,0.12);
+  --panel-bd-2: rgba(255,255,255,0.06);
+
+  /* Card */
+  --cardGrad1:#ffb869;
+  --cardGrad2:#ff7a43;
+  --cardSpecular: rgba(255,255,255,0.28);
+
+  /* Text */
   --white:#ffffff;
-  --muted: rgba(255,255,255,0.85);
-  --radius: 26px;
+  --muted: rgba(255,255,255,0.82);
+
+  /* Radii & shadows */
+  --radius: 24px;
   --cardRadius: 26px;
-  --shadow: 0 22px 60px rgba(0,0,0,0.35);
+  --shadow-ambient: 0 30px 80px rgba(0,0,0,0.55);
+  --shadow-strong: 0 22px 60px rgba(0,0,0,0.40);
+
+  /* Layout */
   --safe-bottom: env(safe-area-inset-bottom);
-  --end-gap: 12px;         /* gap between panel and card at max drag */
+  --end-gap: 14px;
 }
+
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-family: -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   -webkit-font-smoothing:antialiased;
   -webkit-text-size-adjust:100%;
   color:var(--white);
-  background: var(--bg);
+  background: radial-gradient(1200px 80% at 10% 0%, rgba(255,122,67,0.18) 0%, transparent 55%),
+              radial-gradient(1200px 90% at 100% 90%, rgba(255,78,149,0.16) 0%, transparent 60%),
+              linear-gradient(180deg,var(--bg-grad1),var(--bg-grad2));
+  overflow-x:hidden;
 }
+
+/* Ambient grain (subtle, performance-friendly) */
+body::after{
+  content:""; position:fixed; inset:-2%;
+  background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1.2px);
+  background-size: 4px 4px;
+  opacity:.25; pointer-events:none; mix-blend-mode: soft-light; z-index:-1;
+}
+
 button{font:inherit}
 
 /* App layout */
 .container{
-  max-width:560px;
+  max-width:640px;
   margin:0 auto;
   min-height:100%;
   display:grid;
   grid-template-rows:auto 1fr auto;
-  padding:16px 16px calc(24px + var(--safe-bottom));
+  padding:18px 18px calc(26px + var(--safe-bottom));
+  gap:10px;
 }
+
+/* Topbar */
 .topbar{
   display:flex;align-items:center;justify-content:center;position:relative;
-  padding:8px 0 10px;
+  padding:10px 0 12px;
 }
-.topbar .title{font-weight:800; letter-spacing:.6px; opacity:.95}
-.topbar .close{position:absolute;right:6px;top:0;bottom:0;margin:auto 0;height:20px;width:20px;display:flex;align-items:center;justify-content:center;opacity:.9}
+.topbar .title{
+  font-weight:900; letter-spacing:.7px; opacity:.96;
+  text-shadow:0 2px 10px rgba(0,0,0,.35);
+  font-size:18px;
+}
+.topbar .close{
+  position:absolute;right:4px;top:0;bottom:0;margin:auto 0;height:24px;width:24px;
+  display:flex;align-items:center;justify-content:center;opacity:.92;border-radius:10px;
+  background: rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(6px) saturate(1.2);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  cursor:pointer;
+}
 .topbar .close:after{
-  content:"";display:block;width:18px;height:18px;border-right:2px solid #fff;border-top:2px solid #fff;transform: rotate(45deg);
+  content:"";display:block;width:12px;height:12px;border-right:2px solid #fff;border-top:2px solid #fff;transform: rotate(45deg);
 }
-.clock{position:absolute;left:6px;top:0;bottom:0;margin:auto 0;font-weight:600;opacity:.9}
 
+/* Screens */
 .screen{display:none;animation:fade .22s ease}
 .screen.active{display:block}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
 /* Blocks & controls */
 .block{
-  background:rgba(255,255,255,0.10);
-  border:1px solid rgba(255,255,255,0.18);
-  border-radius:18px;padding:14px;box-shadow:0 12px 34px rgba(0,0,0,.18);
+  background:var(--panel);
+  border:1px solid var(--panel-bd);
+  border-radius:var(--radius);
+  padding:16px 14px;
+  box-shadow: var(--shadow-ambient), inset 0 0 0 1px var(--panel-bd-2);
+  backdrop-filter: blur(14px) saturate(1.1);
 }
 .center{text-align:center}
 .hint{color:var(--muted);text-align:center;margin:8px 0 0}
-.controls{display:flex;gap:12px;align-items:center;justify-content:center;margin:10px 0}
-.step{width:48px;height:48px;border-radius:14px;border:none;background:rgba(0,0,0,.2);color:#fff;font-weight:900;font-size:22px;cursor:pointer}
-.value{min-width:96px;height:48px;border-radius:14px;background:rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;border:1px solid rgba(255,255,255,.16)}
-.primary{appearance:none;border:none;border-radius:999px;background:#101113;color:#fff;padding:14px 20px;font-weight:800;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.28)}
+.controls{display:flex;gap:12px;align-items:center;justify-content:center;margin:12px 0}
+.step{
+  width:52px;height:52px;border-radius:16px;border:none;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  color:#fff;font-weight:900;font-size:22px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow: 0 10px 26px rgba(0,0,0,.28);
+}
+.step:active{transform:translateY(1px)}
+.step:focus-visible{outline:2px solid rgba(255,122,67,.6); outline-offset:2px}
+.value{
+  min-width:110px;height:52px;border-radius:16px;
+  background:rgba(0,0,0,.28);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:18px;border:1px solid rgba(255,255,255,.16)
+}
+.primary{
+  appearance:none;border:none;border-radius:999px;
+  background: linear-gradient(180deg,#1b1e26,#151821);
+  color:#fff;padding:14px 22px;font-weight:900;cursor:pointer;
+  box-shadow: 0 14px 30px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.10) inset;
+  transition: transform .06s ease, box-shadow .15s ease, filter .2s ease;
+}
+.primary:hover{filter:brightness(1.06)}
 .primary:active{transform:translateY(1px)}
+.primary:focus-visible{outline:2px solid rgba(255,78,149,.65); outline-offset:2px}
 
 /* Names list */
-.names{display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:58vh;overflow:auto;padding-right:6px}
+.names{display:flex;flex-direction:column;gap:10px;margin-top:10px;max-height:58vh;overflow:auto;padding-right:6px}
 .input{
-  width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.16);
-  background:rgba(0,0,0,.18);color:#fff;outline:none
+  width:100%;padding:13px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.26);color:#fff;outline:none;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
 }
+.input::placeholder{color:rgba(255,255,255,.55)}
 
 /* Reveal area */
 .reveal-wrap{
   position:relative;
   height: 70vh; max-height: 680px; min-height: 520px;
-  margin: 6px auto 10px;
+  margin: 8px auto 12px;
 }
+
+/* Word panel — premium glass + glow edge */
 .word-panel{
   position:absolute; left:0; right:0; top:0;
-  height: 170px; background: var(--panel); border-radius: 22px; box-shadow: var(--shadow);
+  height:170px;
+  background: var(--panel);
+  border-radius: 22px;
+  box-shadow: var(--shadow-strong), inset 0 0 0 1px var(--panel-bd-2);
+  border: 1px solid var(--panel-bd);
   display:flex; align-items:center; justify-content:center; padding:18px; z-index:1;
+  backdrop-filter: blur(14px) saturate(1.15);
+  overflow:hidden;
+}
+.word-panel::before{
+  content:""; position:absolute; inset:-1px;
+  border-radius: inherit;
+  background: linear-gradient(140deg, rgba(255,122,67,0.28), rgba(255,78,149,0.25) 40%, transparent 60%);
+  mask: linear-gradient(#000,#000) content-box, linear-gradient(#000,#000);
+  -webkit-mask: linear-gradient(#000,#000) content-box, linear-gradient(#000,#000);
+  padding:1px; opacity:.35; pointer-events:none;
 }
 .word-panel h1{
   margin:0; font-size: clamp(28px, 7vw, 50px); letter-spacing: 2px; font-weight: 900;
+  text-shadow: 0 6px 18px rgba(0,0,0,.35);
 }
-/* Draggable card above panel */
+
+/* Draggable card — glossy premium gradient + specular sheen */
 .card{
   position:absolute; left:0; right:0; top:0; height:420px;
-  background: linear-gradient(180deg,var(--cardGrad1),var(--cardGrad2));
-  border-radius: var(--cardRadius); box-shadow: var(--shadow);
-  border: 4px solid #fff; overflow:hidden; z-index:2; touch-action:none; cursor:grab; will-change: transform;
+  background:
+    radial-gradient(120% 120% at 20% 0%, rgba(255,255,255,0.20), transparent 46%),
+    linear-gradient(180deg,var(--cardGrad1),var(--cardGrad2));
+  border-radius: var(--cardRadius);
+  box-shadow: var(--shadow-strong);
+  border: 1px solid rgba(255,255,255,0.75);
+  outline: 1px solid rgba(0,0,0,0.10);
+  overflow:hidden; z-index:2; touch-action:none; cursor:grab; will-change: transform, filter;
 }
 .card:active{ cursor:grabbing; }
-.card-inner{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding:22px; text-align:center; }
+
+/* gradient border glow */
+.card::after{
+  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  background: conic-gradient(from 200deg at 50% 50%, rgba(255,122,67,0.35), rgba(255,78,149,0.35), rgba(255,122,67,0.35));
+  mix-blend-mode: overlay; opacity:.22;
+}
+
+/* specular swoosh */
+.card::before{
+  content:""; position:absolute; inset:-10% -10% auto -10%; height:55%;
+  background: linear-gradient(160deg, var(--cardSpecular), transparent 40%);
+  transform: translateY(-10%) rotate(-6deg);
+  filter: blur(12px); opacity:.45; pointer-events:none;
+}
+
+.card-inner{
+  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding:22px; text-align:center;
+}
 .player-name{
   position:absolute; left:0; right:0; top:24px; text-align:center;
-  font-weight:900; font-size: clamp(26px, 8vw, 48px); color:#fff; text-shadow: 0 3px 12px rgba(0,0,0,.24);
+  font-weight:900; font-size: clamp(26px, 8vw, 48px); color:#fff;
+  text-shadow: 0 3px 16px rgba(0,0,0,.35);
 }
+
+/* Avatar block — tightened & glossy */
 .avatar{
-  position:absolute; left:0; right:0; bottom:78px; margin:0 auto;
-  width: 280px; height: 220px; border-radius: 28px;
+  position:absolute; left:0; right:0; bottom:84px; margin:0 auto;
+  width: 260px; height: 210px; border-radius: 28px;
   background: radial-gradient( circle at 46% 36%, #ffd9ab 0%, #f3a064 42%, #e2683f 86% );
-  filter: saturate(1); opacity:.95; box-shadow: inset 0 -24px 46px rgba(0,0,0,.16);
+  filter: saturate(1);
+  opacity:.96;
+  box-shadow: inset 0 -24px 46px rgba(0,0,0,.18), 0 10px 36px rgba(0,0,0,.35);
 }
+
 .hint-row{
   font-weight:800; font-size:16px; color:#fff; text-shadow:0 3px 10px rgba(0,0,0,.2);
   display:flex;flex-direction:column;align-items:center;gap:8px; margin-top:auto; margin-bottom:4px;
@@ -116,19 +238,31 @@ button{font:inherit}
 
 /* Footer */
 .footer{display:flex;flex-direction:column;align-items:center;gap:10px}
-.btn{appearance:none;border:none;border-radius:999px;background:#101113;color:#fff;padding:14px 20px;font-weight:800;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.28);display:none}
+.btn{
+  appearance:none;border:none;border-radius:999px;background: linear-gradient(180deg,#1b1e26,#151821);
+  color:#fff;padding:14px 22px;font-weight:900;cursor:pointer;
+  box-shadow: 0 14px 30px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.10) inset;
+  display:none;
+}
 .btn.show{display:inline-block}
+.btn:focus-visible{outline:2px solid rgba(255,122,67,.6); outline-offset:2px}
 .pass{color:var(--muted)}
 
-/* End */
+/* End screen */
 .kudos{font-weight:900;font-size:22px;margin:6px 0 2px;text-align:center}
-.row{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:8px}
+.row{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:10px}
+
+/* Motion preference */
+@media (prefers-reduced-motion: reduce){
+  .screen{animation:none}
+  .arrow{animation:none}
+}
 </style>
 </head>
 <body>
   <div class="container">
     <div class="topbar">
-      <div class="clock" id="clock">16:15</div>
+      <!-- Removed the clock -->
       <div class="title">Impostor</div>
       <div class="close" aria-label="Close"></div>
     </div>
@@ -139,15 +273,15 @@ button{font:inherit}
         <h3 style="margin:6px 0 8px">New Game</h3>
         <div>Players</div>
         <div class="controls">
-          <button class="step" data-step="players" data-delta="-1">–</button>
-          <div id="playersVal" class="value">5</div>
-          <button class="step" data-step="players" data-delta="1">+</button>
+          <button class="step" data-step="players" data-delta="-1" aria-label="Decrease players">–</button>
+          <div id="playersVal" class="value" aria-live="polite">5</div>
+          <button class="step" data-step="players" data-delta="1" aria-label="Increase players">+</button>
         </div>
         <div style="margin-top:8px">Impostors</div>
         <div class="controls">
-          <button class="step" data-step="imps" data-delta="-1">–</button>
-          <div id="impsVal" class="value">1</div>
-          <button class="step" data-step="imps" data-delta="1">+</button>
+          <button class="step" data-step="imps" data-delta="-1" aria-label="Decrease impostors">–</button>
+          <div id="impsVal" class="value" aria-live="polite">1</div>
+          <button class="step" data-step="imps" data-delta="1" aria-label="Increase impostors">+</button>
         </div>
         <p class="hint">Recommendation adjusts with player count — you can tweak it.</p>
         <button id="goNames" class="primary">Continue</button>
@@ -383,12 +517,7 @@ function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
 function recommendImpostors(n){ if(n<=6)return 1; if(n<=10)return 2; if(n<=14)return 3; if(n<=18)return 4; return Math.floor(n/4); }
 function pickUnique(n,k){ const arr=Array.from({length:n},(_,i)=>i); for(let i=arr.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]];} return arr.slice(0,k).sort((a,b)=>a-b); }
 
-/* Clock (static demo look) */
-(function keepFakeClock(){
-  const el=document.getElementById('clock');
-  function pad(n){return (n<10?'0':'')+n;}
-  const d=new Date(); el.textContent=`${pad(d.getHours())}:${pad(d.getMinutes())}`;
-})();
+/* Removed fake clock code */
 </script>
 </body>
 </html>
