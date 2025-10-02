@@ -3,7 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Impostor — Swipe Down (2025)</title>
+  <meta name="theme-color" content="#0f1014" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Impostor — Swipe Down (2025 v2)</title>
   <style>
     :root{
       /* Brand */
@@ -11,24 +14,27 @@
       --bg2:#161921;          /* night indigo */
       --accent:#ff6b4a;       /* coral highlight */
       --accent-2:#ffd06b;     /* warm light */
-      --panel:#0c0d10;        /* role panel */
-      --cardTop:#ffb869;      /* legacy warm gradient light */
-      --cardBot:#ff7a43;      /* legacy warm gradient dark */
+      --panel:#151922;        /* brighter than bg for contrast */
+      --panel-border: rgba(255,255,255,.12);
+      --cardTop:#ffb869;
+      --cardBot:#ff7a43;
       --white:#fff;
       --muted: rgba(255,255,255,.85);
 
       --radius: 28px;
-      --cardRadius: 28px;
+      --cardRadius: 26px;
       --shadow-lg: 0 24px 80px rgba(0,0,0,.45);
       --shadow-md: 0 16px 48px rgba(0,0,0,.36);
       --safe-bottom: env(safe-area-inset-bottom);
       --safe-top: env(safe-area-inset-top);
-      --panelHeight: min(32vh, 260px); /* Taller role field (no rounded bottom) */
-      --dragGap: 16px; /* gap between panel and card at max drag */
+
+      /* Taller, flat-bottom role field (prevents curve reveal) */
+      --panelHeight: clamp(300px, 38vh, 340px);
+      --dragGap: 14px; /* gap between panel and card at max drag */
     }
 
     *{box-sizing:border-box}
-    html,body{height:100%;margin:0}
+    html,body{height:100%;margin:0;background:#0f1014}
     body{
       font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
       -webkit-font-smoothing: antialiased;
@@ -38,7 +44,10 @@
       overflow: hidden;
     }
 
-    /* Animated grain / stars */
+    /* Cover the notch / safe top so no white shows */
+    body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:linear-gradient(160deg,var(--bg1),var(--bg2));z-index:9999;}
+
+    /* Animated grain */
     .noise{position:fixed;inset:-50%;pointer-events:none;opacity:.08;mix-blend-mode:overlay;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');animation:grain 1.8s steps(4) infinite}
     @keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}50%{transform:translate(4%,-3%)}75%{transform:translate(-2%,-1%)}100%{transform:translate(0,0)}}
 
@@ -46,10 +55,10 @@
     .grid{position:fixed;inset:0;pointer-events:none;opacity:.06;background-image:radial-gradient(circle at 50% 50%, rgba(255,255,255,.35) 0 1px, transparent 2px), linear-gradient(transparent 31px, rgba(255,255,255,.09) 32px), linear-gradient(90deg, transparent 31px, rgba(255,255,255,.09) 32px); background-size:32px 32px, 32px 32px, 32px 32px;}
 
     /* App layout */
-    .container{ max-width:640px; margin:0 auto; height:100%; display:grid; grid-template-rows:auto 1fr auto; padding:calc(8px + var(--safe-top)) 16px calc(28px + var(--safe-bottom)); gap:10px; }
+    .container{ max-width:640px; margin:0 auto; height:100%; display:grid; grid-template-rows:auto 1fr auto; padding:calc(10px + var(--safe-top)) 16px calc(28px + var(--safe-bottom)); gap:10px; }
 
-    /* Header — centered title only (clock/arrow removed) */
-    .topbar{ display:flex; align-items:center; justify-content:center; padding:6px 0 4px; }
+    /* Header — centered title */
+    .topbar{ display:flex; align-items:center; justify-content:center; padding:2px 0 0; }
     .logo{ font-weight:900; letter-spacing:1px; font-size:18px; text-transform:uppercase; background:linear-gradient(90deg,var(--accent),var(--accent-2)); -webkit-background-clip:text; background-clip:text; color:transparent; filter: drop-shadow(0 6px 18px rgba(255,107,74,.3)); }
 
     /* Screen handling */
@@ -74,28 +83,26 @@
     .input{ width:100%; padding:14px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.16); background:rgba(0,0,0,.28); color:#fff; outline:none; font-weight:600; }
 
     /* Reveal Stage */
-    .reveal-wrap{ position:relative; height:72vh; max-height:720px; min-height:560px; margin:6px auto 10px; }
+    .reveal-wrap{ position:relative; height:72vh; max-height:720px; min-height:560px; margin:6px auto 10px; overflow:visible; }
 
-    /* Role field (taller + straight bottom edge) */
-    .word-panel{ position:absolute; left:0; right:0; top:0; height:var(--panelHeight); background: var(--panel); box-shadow: var(--shadow-lg); display:flex; align-items:center; justify-content:center; padding:24px; z-index:1; border-radius: 26px 26px 0 0; /* no bottom curves */ border:1px solid rgba(255,255,255,.12);
-      background-image: radial-gradient(1200px 320px at 50% 0, rgba(255,255,255,.08), transparent 60%), radial-gradient(600px 220px at 50% 100%, rgba(255,255,255,.04), transparent 60%);
-    }
+    /* Role field (taller + straight bottom edge; no curve or glow leak) */
+    .word-panel{ position:absolute; left:0; right:0; top:0; height:var(--panelHeight); background: var(--panel); box-shadow: var(--shadow-lg); display:flex; align-items:center; justify-content:center; padding:24px; z-index:1; border-radius: 26px 26px 0 0; border:1px solid var(--panel-border); overflow:hidden; }
+    /* internal controlled lighting, clipped to flat bottom */
+    .word-panel::before{ content:""; position:absolute; inset:0; background-image: radial-gradient(1200px 320px at 50% 0, rgba(255,255,255,.08), transparent 60%), radial-gradient(600px 220px at 50% 100%, rgba(255,255,255,.05), transparent 62%); mask: linear-gradient(#000,#000); }
     .word-panel h1{ margin:0; font-size: clamp(28px, 6.5vw, 56px); letter-spacing: 2px; font-weight: 900; text-align:center; }
 
-    /* Draggable card */
-    .card{ position:absolute; left:0; right:0; top:0; height:460px; border-radius: var(--cardRadius); overflow:hidden; z-index:2; touch-action:none; cursor:grab; will-change: transform, filter; border: 1px solid rgba(255,255,255,.16); box-shadow: var(--shadow-lg);
+    /* Draggable card — slightly smaller */
+    .card{ position:absolute; left:0; right:0; top:0; height:clamp(360px, 54vh, 420px); border-radius: var(--cardRadius); overflow:hidden; z-index:2; touch-action:none; cursor:grab; will-change: transform, filter; border: 1px solid rgba(255,255,255,.16); box-shadow: var(--shadow-lg);
       background: conic-gradient(from 220deg at 80% 20%, rgba(255,255,255,.15), transparent 20%), linear-gradient(180deg, var(--cardTop), var(--cardBot));
     }
     .card:active{ cursor:grabbing; }
 
-    /* Gloss sheen */
-    .card::after{ content:""; position:absolute; inset:0; background: linear-gradient( to bottom, rgba(255,255,255,.18), transparent 35% ); mix-blend-mode: soft-light; pointer-events:none; }
+    .card::after{ content:""; position:absolute; inset:0; background: linear-gradient( to bottom, rgba(255,255,255,.16), transparent 35% ); mix-blend-mode: soft-light; pointer-events:none; }
 
     .card-inner{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding:22px; text-align:center; }
-    .player-name{ position:absolute; left:0; right:0; top:22px; text-align:center; font-weight:1000; font-size: clamp(26px, 7.5vw, 48px); text-shadow: 0 6px 22px rgba(0,0,0,.35); letter-spacing:.5px; }
+    .player-name{ position:absolute; left:0; right:0; top:26px; text-align:center; font-weight:1000; font-size: clamp(26px, 7.5vw, 48px); text-shadow: 0 6px 22px rgba(0,0,0,.35); letter-spacing:.5px; }
 
-    .avatar{ position:absolute; left:0; right:0; bottom:92px; margin:0 auto; width: 280px; height: 220px; border-radius: 28px; background: radial-gradient( circle at 46% 36%, #ffd9ab 0%, #f3a064 42%, #e2683f 86% ); filter: saturate(1); opacity:.96; box-shadow: inset 0 -24px 46px rgba(0,0,0,.16), 0 22px 42px rgba(0,0,0,.28); border:1px solid rgba(0,0,0,.18);
-      display:flex; align-items:center; justify-content:center; font-size:64px; }
+    .avatar{ position:absolute; left:0; right:0; bottom:96px; margin:0 auto; width: 260px; height: 206px; border-radius: 26px; background: radial-gradient( circle at 46% 36%, #ffd9ab 0%, #f3a064 42%, #e2683f 86% ); filter: saturate(1); opacity:.96; box-shadow: inset 0 -24px 46px rgba(0,0,0,.16), 0 22px 42px rgba(0,0,0,.28); border:1px solid rgba(0,0,0,.18); display:flex; align-items:center; justify-content:center; font-size:62px; }
 
     .hint-row{ font-weight:850; font-size:16px; color:#fff; text-shadow:0 3px 10px rgba(0,0,0,.2); display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:auto; margin-bottom:6px; opacity:.98; }
     .hint-row .tiny{ font-size:12px; opacity:.9; letter-spacing:.2px; }
@@ -118,7 +125,6 @@
 
     /* Accessibility focus */
     :focus-visible{ outline:2px solid var(--accent-2); outline-offset:3px }
-
   </style>
 </head>
 <body>
@@ -126,10 +132,8 @@
   <div class="grid"></div>
 
   <div class="container">
-    <!-- Header (clean: no clock, no arrow/close) -->
-    <div class="topbar">
-      <div class="logo">Impostor</div>
-    </div>
+    <!-- Header (clean) -->
+    <div class="topbar"><div class="logo">Impostor</div></div>
 
     <!-- SETUP -->
     <section id="setup" class="screen active">
@@ -200,21 +204,10 @@
   </div>
 
   <script>
-    /* ================= Words (exactly 10) ================= */
-    const WORDS = [
-      "Volcano","Umbrella","Backpack","Lighthouse","Lantern",
-      "Mirror","Telescope","Pancakes","Compass","Rocket"
-    ];
+    const WORDS = ["Volcano","Umbrella","Backpack","Lighthouse","Lantern","Mirror","Telescope","Pancakes","Compass","Rocket"];
 
-    /* ================= State ================= */
-    let playersCount = 5;
-    let impostors = 1;
-    let players = [];
-    let secretWord = "";
-    let impIdx = [];
-    let current = 0;
+    let playersCount = 5; let impostors = 1; let players = []; let secretWord = ""; let impIdx = []; let current = 0;
 
-    /* ================= Elements ================= */
     const screens = mapEls('#setup','#names','#reveal','#end');
     const playersVal = qs('#playersVal'), impsVal = qs('#impsVal');
     const goNamesBtn = qs('#goNames'), startGameBtn = qs('#startGame'), backSetupBtn = qs('#backSetup');
@@ -226,7 +219,6 @@
     const confetti = qs('#confetti');
     const avatar = qs('#avatar');
 
-    /* ================= Setup controls ================= */
     onAll('.step','click',(btn)=>{
       const type = btn.dataset.step, delta = parseInt(btn.dataset.delta,10);
       if(type==='players'){
@@ -242,180 +234,60 @@
     });
 
     goNamesBtn.addEventListener('click', ()=>{
-      show('names');
-      namesList.innerHTML='';
+      show('names'); namesList.innerHTML='';
       for(let i=0;i<playersCount;i++){
-        const div=document.createElement('div');
-        const inp=document.createElement('input');
-        inp.className='input';
-        inp.placeholder=`Player ${i+1}`;
-        inp.id=`p_${i}`;
-        div.appendChild(inp);
-        namesList.appendChild(div);
+        const div=document.createElement('div'); const inp=document.createElement('input');
+        inp.className='input'; inp.placeholder=`Player ${i+1}`; inp.id=`p_${i}`; div.appendChild(inp); namesList.appendChild(div);
       }
     });
 
     backSetupBtn.addEventListener('click', ()=> show('setup'));
 
     startGameBtn.addEventListener('click', ()=>{
-      players=[];
-      for(let i=0;i<playersCount;i++){
-        const v=(qs(`#p_${i}`).value||'').trim();
-        players.push(v || `Player ${i+1}`);
-      }
+      players=[]; for(let i=0;i<playersCount;i++){ const v=(qs(`#p_${i}`).value||'').trim(); players.push(v || `Player ${i+1}`); }
       beginRound();
     });
 
-    /* ================= Round ================= */
     function beginRound(){
       secretWord = WORDS[(Math.random()*WORDS.length)|0];
       impIdx = pickUnique(players.length, Math.min(impostors, Math.max(1, players.length-1)));
-      current = 0;
-      buildRail();
-      show('reveal');
-      prepareCard();
-      sizeConfetti();
+      current = 0; buildRail(); show('reveal'); prepareCard(); sizeConfetti();
     }
 
-    function buildRail(){
-      rail.innerHTML='';
-      for(let i=0;i<players.length;i++){
-        const d=document.createElement('div');
-        d.className='dot'+(i===0?' active':'');
-        rail.appendChild(d);
-      }
-    }
+    function buildRail(){ rail.innerHTML=''; for(let i=0;i<players.length;i++){ const d=document.createElement('div'); d.className='dot'+(i===0?' active':''); rail.appendChild(d);} }
 
-    /* ================= Reveal (swipe-down + bounce-back + tilt) ================= */
-    let drag = {active:false, startY:0, prevY:0, vy:0, offset:0, peak:0, revealed:false};
+    let drag = {active:false, prevY:0, vy:0, offset:0, peak:0, revealed:false};
     let maxDrop = 0;
 
-    function pxVar(name){
-      const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-      return parseFloat(v.replace('px','')) || 0;
-    }
+    function pxVar(name){ const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return parseFloat(v.replace('px','')) || 0; }
+    function measure(){ const panelRect = panel.getBoundingClientRect(); const cardRect = card.getBoundingClientRect(); const wrapRect = wrap.getBoundingClientRect(); const gap = pxVar('--dragGap'); let target = panelRect.height + gap; const maxAllowed = Math.max(0, wrapRect.height - cardRect.height - 12); maxDrop = Math.min(target, maxAllowed); }
 
-    function measure(){
-      const panelRect = panel.getBoundingClientRect();
-      const cardRect = card.getBoundingClientRect();
-      const wrapRect = wrap.getBoundingClientRect();
-      const gap = pxVar('--dragGap');
-      let target = panelRect.height + gap;
-      const maxAllowed = Math.max(0, wrapRect.height - cardRect.height - 12);
-      maxDrop = Math.min(target, maxAllowed);
-    }
-
-    function prepareCard(){
-      // Sync UI
-      measure();
-      drag.revealed=false; drag.offset=0; drag.peak=0; setY(0); setTilt(0,0);
-      nextBtn.classList.remove('show');
-      pname.textContent = players[current];
-      avatar.textContent = randEmoji();
-      const isImp = impIdx.includes(current);
-      wordEl.textContent = isImp ? "You are the Impostor!" : secretWord;
-      // highlight rail
-      Array.from(rail.children).forEach((d,i)=>d.classList.toggle('active', i===current));
-    }
+    function prepareCard(){ measure(); drag.revealed=false; drag.offset=0; drag.peak=0; setY(0); nextBtn.classList.remove('show'); pname.textContent = players[current]; avatar.textContent = randEmoji(); const isImp = impIdx.includes(current); wordEl.textContent = isImp ? "You are the Impostor!" : secretWord; Array.from(rail.children).forEach((d,i)=>d.classList.toggle('active', i===current)); }
 
     function setY(px){ card.style.transform = `translateY(${px}px)`; }
-    function setTilt(rx,ry){ card.style.filter = `drop-shadow(0 18px 28px rgba(0,0,0,.35))`; card.style.transform += ` rotateX(${rx}deg) rotateY(${ry}deg)`; }
-
-    function springTo(target,{stiffness=520,damping=18,v0=0}={}){
-      let y = parseFloat((card.style.transform||'').match(/-?\d+\.?\d*/)?.[0] || 0);
-      let v = v0;
-      const dt = 1/60;
-      function step(){
-        const a = -stiffness*(y-target) - damping*v;
-        v += a*dt;
-        y += v*dt;
-        card.style.transform = `translateY(${y}px)`; // reset tilt during spring
-        if (Math.abs(y-target) < 0.6 && Math.abs(v) < 0.6){
-          card.style.transform = `translateY(${target}px)`;
-          return;
-        }
-        requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    }
+    function springTo(target,{stiffness=560,damping=18,v0=0}={}){ let y = parseFloat((card.style.transform||'').match(/-?\d+\.?\d*/)?.[0] || 0); let v = v0; const dt = 1/60; function step(){ const a = -stiffness*(y-target) - damping*v; v += a*dt; y += v*dt; card.style.transform = `translateY(${y}px)`; if (Math.abs(y-target) < 0.6 && Math.abs(v) < 0.6){ card.style.transform = `translateY(${target}px)`; return; } requestAnimationFrame(step);} requestAnimationFrame(step); }
 
     function haptic(n){ if(navigator.vibrate) navigator.vibrate(n); }
+    function blip(freq=560,time=.12){ try{ const ctx=new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(), g=ctx.createGain(); o.type='triangle'; o.frequency.value=freq; g.gain.value=0; o.connect(g); g.connect(ctx.destination); const t=ctx.currentTime; g.gain.linearRampToValueAtTime(.06,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+time); o.start(t); o.stop(t+time+.02);}catch(e){} }
 
-    function blip(freq=560,time=.12){
-      try{
-        const ctx=new (window.AudioContext||window.webkitAudioContext)();
-        const o=ctx.createOscillator(), g=ctx.createGain();
-        o.type='triangle'; o.frequency.value=freq; g.gain.value=0; o.connect(g); g.connect(ctx.destination);
-        const t=ctx.currentTime; g.gain.linearRampToValueAtTime(.06,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+time); o.start(t); o.stop(t+time+.02);
-      }catch(e){}
-    }
-
-    // 3D tilt on pointer move
-    card.addEventListener('pointermove', (e)=>{
-      const r = card.getBoundingClientRect();
-      const cx = r.left + r.width/2, cy = r.top + r.height/2;
-      const dx = (e.clientX - cx)/r.width, dy = (e.clientY - cy)/r.height;
-      const maxTilt = 6;
-      const rx = clamp(-dy*maxTilt, -maxTilt, maxTilt);
-      const ry = clamp(dx*maxTilt, -maxTilt, maxTilt);
-      card.style.transform = `translateY(${drag.offset}px) rotateX(${rx}deg) rotateY(${ry}deg)`;
-    });
-
-    // Drag mechanics
-    card.addEventListener('pointerdown', (e)=>{
-      card.setPointerCapture(e.pointerId);
-      drag.active=true; drag.startY=e.clientY; drag.prevY=e.clientY; drag.vy=0;
-    });
-
-    card.addEventListener('pointermove', (e)=>{
-      if(!drag.active) return;
-      const y=e.clientY; const dy=y-drag.prevY; drag.prevY=y; drag.vy = 0.7*drag.vy + 0.3*dy;
-      let newOffset = Math.max(0, Math.min(maxDrop, drag.offset + dy)); // only DOWN
-      drag.offset = newOffset; if(newOffset>drag.peak) drag.peak = newOffset; setY(newOffset);
-    });
-
+    card.addEventListener('pointerdown', (e)=>{ card.setPointerCapture(e.pointerId); drag.active=true; drag.prevY=e.clientY; drag.vy=0; });
+    card.addEventListener('pointermove', (e)=>{ if(!drag.active) return; const y=e.clientY; const dy=y-drag.prevY; drag.prevY=y; drag.vy = 0.7*drag.vy + 0.3*dy; let newOffset = Math.max(0, Math.min(maxDrop, drag.offset + dy)); drag.offset = newOffset; if(newOffset>drag.peak) drag.peak = newOffset; setY(newOffset); });
     card.addEventListener('pointerup', release); card.addEventListener('pointercancel', release);
-    function release(){
-      if(!drag.active) return; drag.active=false;
-      const pulledEnough = drag.peak >= maxDrop*0.90;
-      haptic(8); springTo(0,{stiffness:560,damping:18,v0:-drag.vy*0.9}); // always bounce back
-      drag.offset=0;
-      if(pulledEnough && !drag.revealed){ drag.revealed=true; nextBtn.classList.add('show'); haptic([16,60,16]); blip(620,.10); confettiBurst(); }
-    }
 
-    // Keyboard accessibility
-    card.addEventListener('keydown', (e)=>{
-      if((e.key==='Enter'||e.key===' ') && !drag.revealed){ e.preventDefault(); drag.revealed=true; nextBtn.classList.add('show'); haptic([16,60,16]); blip(); springTo(0,{stiffness:560,damping:18}); confettiBurst(); }
-    });
+    function release(){ if(!drag.active) return; drag.active=false; const pulledEnough = drag.peak >= maxDrop*0.95; haptic(8); springTo(0,{stiffness:560,damping:18,v0:-drag.vy*0.9}); drag.offset=0; if(pulledEnough && !drag.revealed){ drag.revealed=true; nextBtn.classList.add('show'); haptic([16,60,16]); blip(620,.10); confettiBurst(); } }
 
-    nextBtn.addEventListener('click', ()=>{
-      if(current+1>=players.length){ show('end'); }
-      else{ current++; drag.revealed=false; prepareCard(); }
-    });
+    card.addEventListener('keydown', (e)=>{ if((e.key==='Enter'||e.key===' ') && !drag.revealed){ e.preventDefault(); drag.revealed=true; nextBtn.classList.add('show'); haptic([16,60,16]); blip(); springTo(0,{stiffness:560,damping:18}); confettiBurst(); } });
 
-    /* ================= Confetti ================= */
-    let ctx, W, H, parts=[];
-    function sizeConfetti(){ confetti.width = W = wrap.clientWidth; confetti.height = H = wrap.clientHeight; ctx = confetti.getContext('2d'); }
+    nextBtn.addEventListener('click', ()=>{ if(current+1>=players.length){ show('end'); } else { current++; drag.revealed=false; prepareCard(); } });
+
+    /* Confetti */
+    let ctx, W, H, parts=[]; function sizeConfetti(){ confetti.width = W = wrap.clientWidth; confetti.height = H = wrap.clientHeight; ctx = confetti.getContext('2d'); }
     window.addEventListener('resize', sizeConfetti, {passive:true});
+    function confettiBurst(){ sizeConfetti(); parts = Array.from({length:70}, ()=>({ x: W/2 + (Math.random()*120-60), y: (Math.random()*40)+40, vx: (Math.random()*2-1)*4, vy: Math.random()*-3-2, g: .18 + Math.random()*.06, r: Math.random()*6+2, a: 1, spin: Math.random()*6 })); let t=0; (function loop(){ t++; ctx.clearRect(0,0,W,H); for(const p of parts){ p.vy += p.g; p.x += p.vx; p.y += p.vy; p.spin += .2; p.a -= .010; ctx.save(); ctx.globalAlpha=Math.max(0,p.a); ctx.translate(p.x,p.y); ctx.rotate(p.spin); const grd = ctx.createLinearGradient(-p.r,-p.r,p.r,p.r); grd.addColorStop(0,'#ffd06b'); grd.addColorStop(1,'#ff6b4a'); ctx.fillStyle=grd; ctx.fillRect(-p.r,-p.r,p.r*2,p.r*2); ctx.restore(); } if(t<220) requestAnimationFrame(loop); })(); }
 
-    function confettiBurst(){
-      sizeConfetti();
-      parts = Array.from({length:80}, ()=>({
-        x: W/2 + (Math.random()*120-60), y: (Math.random()*40)+40,
-        vx: (Math.random()*2-1)*4, vy: Math.random()*-3-2,
-        g: .18 + Math.random()*.06, r: Math.random()*6+2, a: 1, spin: Math.random()*6
-      }));
-      let t=0; (function loop(){ t++; ctx.clearRect(0,0,W,H);
-        for(const p of parts){ p.vy += p.g; p.x += p.vx; p.y += p.vy; p.spin += .2; p.a -= .009; ctx.save(); ctx.globalAlpha=Math.max(0,p.a); ctx.translate(p.x,p.y); ctx.rotate(p.spin); const grd = ctx.createLinearGradient(-p.r,-p.r,p.r,p.r); grd.addColorStop(0,'#ffd06b'); grd.addColorStop(1,'#ff6b4a'); ctx.fillStyle=grd; ctx.fillRect(-p.r,-p.r,p.r*2,p.r*2); ctx.restore(); }
-        if(t<240) requestAnimationFrame(loop);
-      })();
-    }
-
-    /* ================= End / Navigation ================= */
     againBtn.addEventListener('click', ()=> beginRound());
     toSetupBtn.addEventListener('click', ()=> show('setup'));
 
-    /* ================= Utils ================= */
     function show(key){ Object.values(screens).forEach(s=>s.classList.remove('active')); screens[key].classList.add('active'); }
     function qs(sel){ return document.querySelector(sel); }
     function mapEls(...sel){ const o={}; sel.forEach(s=>o[s.slice(1)]=qs(s)); return o; }
@@ -425,7 +297,6 @@
     function pickUnique(n,k){ const arr=Array.from({length:n},(_,i)=>i); for(let i=arr.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]];} return arr.slice(0,k).sort((a,b)=>a-b); }
     function randEmoji(){ const s = ['🙂','😎','🤖','👽','🧠','🦊','🐼','🐵','🐯','🦄','🐸','🐙','🦖','🐺','🦁','🐨']; return s[(Math.random()*s.length)|0]; }
 
-    // Resize bounds & safe panel calculation
     new ResizeObserver(()=>measure()).observe(wrap);
   </script>
 </body>
